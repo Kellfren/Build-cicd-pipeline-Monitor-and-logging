@@ -1,0 +1,13 @@
+# Resource: https://prometheus.io/docs/alerting/latest/notification_examples/
+# rules.yml file triggers the alerts
+groups:
+- name: Instances #a group name "Instances"
+  rules:
+  - alert: InstanceDown #name of the alert. Could be also ex: "UsingTooMuchMemory"
+    expr: up == 0 #ex: could be node_memory_MemFree_bytes < 1000000
+    for: 1m
+    labels:
+      severity: 'critical'
+    annotations:
+      summary: "Instance {{ $labels.instance }} down" #the message you send
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 3 minutes."

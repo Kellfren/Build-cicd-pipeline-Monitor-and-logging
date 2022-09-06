@@ -1,0 +1,10 @@
+# Exercise for setting up a web server in an EC
+ - name: Exercise for setting up a web server in an EC 
+   hosts: prometheus
+   user: ubuntu
+   become: true #elevate the way we execute commands (sudo)
+   become_method: sudo
+   become_user: root
+   roles:
+    - configure-prometheus-server
+    - configure-prometheus-alertmanager

@@ -1,0 +1,63 @@
+# Exercise - Infrastructure Creation for Prometheus ---
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Infrastructure Creation for Prometheus - Server
+
+Parameters:
+  ID:
+    Description: Unique identifier.
+    Type: String
+
+Resources:
+  
+  #Create an Ubuntu instance
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+      KeyName: #my prometheus key
+      ImageId: 'ami-052efd3df9dad4825'
+      InstanceType: t2.micro
+      Tags:
+        - Key: Name
+          Value: !Sub Prometheus-${ID}
+      BlockDeviceMappings: 
+        - DeviceName: /dev/sda1 
+          Ebs:
+            VolumeSize: 8
+
+  #Security Groups
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: inbound network rules
+      GroupName: !Sub UdaPeople-Prometheus-${ID}
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+          Description: ssh for administrator
+        - IpProtocol: tcp
+          FromPort: '9090'
+          ToPort: '9090'
+          CidrIp: 0.0.0.0/0
+          Description: prometheus server
+        - IpProtocol: tcp
+          FromPort: '9100'
+          ToPort: '9100'
+          CidrIp: 0.0.0.0/0
+          Description: prometheus node-exporter
+        - IpProtocol: tcp
+          FromPort: '9093'
+          ToPort: '9093'
+          CidrIp: 0.0.0.0/0
+          Description: alertmanager
+  
+Outputs:
+  BackendURL:
+    Description: The prometheus hostname
+    Value: !Join ["", ["http://", !GetAtt EC2Instance.PublicDnsName,":9090"]]
+    Export:
+      Name: !Sub Prometheus-Url-${ID}

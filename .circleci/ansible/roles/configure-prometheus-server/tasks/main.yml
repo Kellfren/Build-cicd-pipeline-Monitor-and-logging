@@ -1,0 +1,80 @@
+# Resource: https://codewizardly.com/prometheus-on-aws-ec2-part1/
+# Prometheus Server Configuration
+# ----------
+- name: "Upgrade packages."
+  become: true
+  apt:
+    upgrade: "yes"
+
+- name: "Create new user named prometheus with no home directory"
+  shell: |
+    sudo useradd --no-create-home prometheus
+- name: Creates Prometheus directory 
+  file:
+    path: /etc/prometheus
+    state: directory
+
+- name: "Add prometheus server configuration."
+  become: true
+  copy:
+    src: prometheus.yml
+    dest: /etc/prometheus/
+
+- name: "Add prometheus alert manager rules.yml configuration."
+  become: true
+  copy:
+    src: rules.yml
+    dest: /etc/prometheus/
+
+- name: Creates Prometheus directory 
+  file:
+    path: /var/lib/prometheus
+    state: directory
+
+- name: "Install prometheus server."
+  unarchive:
+    src: https://github.com/prometheus/prometheus/releases/download/v2.30.3/prometheus-2.30.3.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: "Move prometheus server binary to /usr/local/bin."
+  become: true
+  copy:
+    src: /tmp/prometheus-2.30.3.linux-amd64/prometheus
+    dest: /usr/local/bin/
+    remote_src: yes
+    mode: '0777'
+
+- name: "Copy console file to appropriate locations"
+  shell: |
+    sudo cp -r /tmp/prometheus-2.30.3.linux-amd64/consoles /etc/prometheus
+    sudo cp -r /tmp/prometheus-2.30.3.linux-amd64/console_libraries /etc/prometheus
+- name: "Move promtool binary to /usr/local/bin."
+  become: true
+  copy:
+    src: /tmp/prometheus-2.30.3.linux-amd64/promtool
+    dest: /usr/local/bin/
+    remote_src: yes
+    mode: '0777'
+
+- name: "Add prometheus unit file to systemd folder."
+  become: true
+  copy:
+    src: prometheus.service
+    dest: /etc/systemd/system/
+
+- name: "Change file owner to user and group prometheus"
+  shell: |
+    sudo chown prometheus:prometheus /etc/prometheus
+    sudo chown prometheus:prometheus /usr/local/bin/prometheus
+    sudo chown prometheus:prometheus /usr/local/bin/promtool
+    sudo chown -R prometheus:prometheus /etc/prometheus/consoles
+    sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries
+    sudo chown -R prometheus:prometheus /var/lib/prometheus
+- name: "Enable prometheus service"
+  become: true
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: prometheus
+    enabled: yes
